@@ -3,7 +3,6 @@ package internal
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -11,8 +10,14 @@ import (
 	"strings"
 )
 
+type FileCommitPreview struct {
+	CommitMsg string
+	Path      string
+}
+
 type GitOperator struct {
-	path string
+	path       string
+	patchFiles []FileCommitPreview
 }
 
 type GitDiff struct {
@@ -78,48 +83,71 @@ func (g *GitOperator) FetchDiff() (*GitDiff, error) {
 	return diff, nil
 }
 
-func (g *GitOperator) PreviewPatch(gitDiff *GitDiff, commit CommitCandidate) (string, error) {
+func (g *GitOperator) PreviewPatch(gitDiff *GitDiff, commit CommitCandidate) (string, string, error) {
 	appDir := filepath.Join(g.path, ".george")
 
 	patch, err := createPatch(gitDiff, commit.Files)
 	if err != nil {
-
-		return "", err
+		return "", "", err
 	}
 
-	tempFile, err := ioutil.TempFile(appDir, "patch-*")
+	tempFile, err := os.CreateTemp(appDir, "patch-*")
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	patchPreview := fmt.Sprintf("commit message: %s\n\n%s", commit.CommitMessage, patch)
-	if _, err := tempFile.WriteString(patchPreview); err != nil {
-		return "", err
+	if _, err := tempFile.WriteString(patch); err != nil {
+		return "", "", err
 	}
 
 	if err := tempFile.Close(); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return tempFile.Name(), nil
+	aboslutePath, err := filepath.Abs(tempFile.Name())
+	if err != nil {
+		return "", "", err
+	}
+
+	g.patchFiles = append(g.patchFiles, FileCommitPreview{
+		CommitMsg: commit.CommitMessage,
+		Path:      aboslutePath,
+	})
+
+	return patchPreview, aboslutePath, nil
 }
 
-func (g *GitOperator) ApplyPatch(patch string) error {
-	//TODO: apply from file !!!!
-	cmd := exec.Command("git", "apply", "--check", "--reverse", "--ignore-space-change", "--ignore-whitespace")
+func (g *GitOperator) ApplyPatch(patchPath string) error {
+	var preview FileCommitPreview
+	for _, p := range g.patchFiles {
+		if p.Path == patchPath {
+			preview = p
+			break
+		}
+	}
 
+	cmd := exec.Command("git", "apply", "--index", preview.Path)
 	cmd.Dir = g.path
 
-	cmd.Stdin = strings.NewReader(patch)
+	fmt.Println(cmd.String())
 
 	var out bytes.Buffer
-
 	cmd.Stdout = &out
 
 	err := cmd.Run()
-
 	if err != nil {
 		return fmt.Errorf("failed to apply patch: %w", err)
+	}
+
+	cmd = exec.Command("git", "commit", "-m", preview.CommitMsg)
+	cmd.Dir = g.path
+
+	fmt.Println(cmd.String())
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
 	}
 
 	return nil
@@ -131,13 +159,13 @@ func (g *GitOperator) MakeCommits(gitDiff *GitDiff, commits []CommitCandidate, c
 
 	go func() {
 		for _, commit := range commits {
-			patchFile, err := g.PreviewPatch(gitDiff, commit)
+			preview, patchFile, err := g.PreviewPatch(gitDiff, commit)
 			if err != nil {
 				errCh <- fmt.Errorf("failed to preview patch: %w", err)
 				return
 			}
 
-			previewCh <- patchFile
+			previewCh <- preview
 
 			confirm := <-confirmationCh
 
