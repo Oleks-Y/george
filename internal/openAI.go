@@ -47,57 +47,22 @@ type Choices struct {
 }
 
 type CommitCandidate struct {
-	CommitMessage string       `json:"commitMessage"`
-	Files         []CommitFile `json:"files"`
-}
-
-type CommitFile struct {
-	Path           string `json:"path"`
-	LinesForCommit []int  `json:"linesForCommit"`
+	CommitMessage string             `json:"commitMessage"`
+	Files         []FilePatchRequest `json:"files"`
 }
 
 func NewOpenAI() *OpenAI {
 	apiKey := os.Getenv("GEORGE_OPENAI_API_KEY")
-
 	if apiKey == "" {
 		log.Fatal("GEORGE_OPENAI_API_KEY is not set. Please set it and try again.")
 	}
 
-	defaultMsgContent := `
-		You're CLI assistant for a software project.
-		You're purpose is to group files for git commit messages in a meaningful way.
-		Files should be grouped based on logical changes 
-		and have a commit message that reflects the changes using Conventional Commits.
-		As a response, provide a JSON array of objects with the following structure, excluding spaces and new lines:
+	defaultPrompt, err := os.ReadFile("./prompt.txt")
+	if err != nil {
+		log.Fatal("failed to read prompt.txt: ", err)
+	}
 
-		[
-			{
-				"commitMessage": "feat: example commit message",
-				"files" : [
-					{
-						"path": "path/to/file",
-						"linesForCommit": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-					}
-				]
-			}, 
-			{
-				"commitMessage": "fix: example commit message",
-				"files" : [
-					{
-						"path": "path/to/file",
-						"linesForCommit": [10, 11]
-					}
-				]
-			}
-		]
-		As an input you will receive a git diff output.
-		Create as many commits, as it is necessary to group the changes in a meaningful way 
-		and each commit to be minimalistic.
-		Commit can include more than one file grouped by same type of change, same context or when changes are related. 
-		For changes in files, which are not related, create separate commits.
-		For updates of dependencies, commit config files together with changes of the lock files.
-		Updates of dependencies should be in separate commits.
-	`
+	defaultMsgContent := string(defaultPrompt)
 
 	return &OpenAI{
 		apiKey: apiKey,
@@ -111,10 +76,17 @@ func NewOpenAI() *OpenAI {
 	}
 }
 
-func (o *OpenAI) GenCommits(gitDiff string) ([]CommitCandidate, error) {
+func (o *OpenAI) GenCommits(gitDiff GitDiff) ([]CommitCandidate, error) {
+	gitDiffJson, err := json.MarshalIndent(gitDiff, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal git diff: %w", err)
+	}
+
+	diffStr := string(gitDiffJson)
+
 	o.conversation = append(o.conversation, Message{
 		Role:    "user",
-		Content: gitDiff,
+		Content: diffStr,
 	})
 
 	body := RequestBody{
