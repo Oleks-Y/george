@@ -45,12 +45,12 @@ func TestCreatePatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	patchRequest := FilePatch{
+	patchRequest := FilePatchRequest{
 		FilePath: "a/src/components/InputField/InputField.tsx b/src/components/InputField/InputField.tsx",
 		HunkIds:  []int{11},
 	}
 
-	patch, err := createPatch(parsed, []FilePatch{patchRequest})
+	patch, err := createPatch(parsed, []FilePatchRequest{patchRequest})
 
 	if err != nil {
 		t.Fatal(err)

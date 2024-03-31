@@ -3,8 +3,11 @@ package internal
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -27,14 +30,21 @@ type Hunk struct {
 	Content string
 }
 
-type FilePatch struct {
-	FilePath string
-	HunkIds  []int
+type FilePatchRequest struct {
+	FilePath string `json:"filePath"`
+	HunkIds  []int  `json:"hunkIds"`
 }
 
 func NewGitOperator(path string) *GitOperator {
 	cmd := exec.Command("git", "status")
 	cmd.Dir = path
+	appDir := filepath.Join(path, ".george")
+	if _, err := os.Stat(appDir); os.IsNotExist(err) {
+		err := os.Mkdir(appDir, 0755)
+		if err != nil {
+			log.Fatalf("failed to create .george directory: %s", err)
+		}
+	}
 
 	err := cmd.Run()
 
@@ -68,9 +78,85 @@ func (g *GitOperator) FetchDiff() (*GitDiff, error) {
 	return diff, nil
 }
 
-func (g *GitOperator) ApplyDiff() error {
+func (g *GitOperator) PreviewPatch(gitDiff *GitDiff, commit CommitCandidate) (string, error) {
+	appDir := filepath.Join(g.path, ".george")
+
+	patch, err := createPatch(gitDiff, commit.Files)
+	if err != nil {
+
+		return "", err
+	}
+
+	tempFile, err := ioutil.TempFile(appDir, "patch-*")
+	if err != nil {
+		return "", err
+	}
+
+	patchPreview := fmt.Sprintf("commit message: %s\n\n%s", commit.CommitMessage, patch)
+	if _, err := tempFile.WriteString(patchPreview); err != nil {
+		return "", err
+	}
+
+	if err := tempFile.Close(); err != nil {
+		return "", err
+	}
+
+	return tempFile.Name(), nil
+}
+
+func (g *GitOperator) ApplyPatch(patch string) error {
+	//TODO: apply from file !!!!
+	cmd := exec.Command("git", "apply", "--check", "--reverse", "--ignore-space-change", "--ignore-whitespace")
+
+	cmd.Dir = g.path
+
+	cmd.Stdin = strings.NewReader(patch)
+
+	var out bytes.Buffer
+
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+
+	if err != nil {
+		return fmt.Errorf("failed to apply patch: %w", err)
+	}
 
 	return nil
+}
+
+func (g *GitOperator) MakeCommits(gitDiff *GitDiff, commits []CommitCandidate, confirmationCh chan bool) (chan string, chan error, error) {
+	previewCh := make(chan string, len(commits))
+	errCh := make(chan error, len(commits))
+
+	go func() {
+		for _, commit := range commits {
+			patchFile, err := g.PreviewPatch(gitDiff, commit)
+			if err != nil {
+				errCh <- fmt.Errorf("failed to preview patch: %w", err)
+				return
+			}
+
+			previewCh <- patchFile
+
+			confirm := <-confirmationCh
+
+			if !confirm {
+				continue
+			}
+
+			fmt.Println("committing...")
+			err = g.ApplyPatch(patchFile)
+
+			if err != nil {
+				panic(err)
+				// errCh <- fmt.Errorf("failed to apply patch: %w", err)
+				// return
+			}
+		}
+	}()
+
+	return previewCh, errCh, nil
 }
 
 func parseDiff(diff string) (*GitDiff, error) {
@@ -122,7 +208,7 @@ func parseDiff(diff string) (*GitDiff, error) {
 	}, nil
 }
 
-func createPatch(diff *GitDiff, patchR []FilePatch) (string, error) {
+func createPatch(diff *GitDiff, patchR []FilePatchRequest) (string, error) {
 	patch := ""
 
 	for _, filePatch := range patchR {

@@ -1,0 +1,134 @@
+diff --git a/package-lock.json b/package-lock.json
+index af83aac..8c0f6b0 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -18 +18 @@
+-                "@types/react-dom": "^18.2.14",
++                "@types/react-dom": "^18.2.18",
+@@ -20 +20 @@
+-                "axios": "^1.6.5",
++                "axios": "^1.6.7",
+@@ -1049,3 +1049,3 @@
+-            "version": "18.2.17",
+-            "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-18.2.17.tgz",
+-            "integrity": "sha512-rvrT/M7Df5eykWFxn6MYt5Pem/Dbyc1N8Y0S9Mrkw2WFCRiqUgw9P7ul2NpwsXCSM1DVdENzdG9J5SreqfAIWg==",
++            "version": "18.2.18",
++            "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-18.2.18.tgz",
++            "integrity": "sha512-TJxDm6OfAX2KJWJdMEVTwWke5Sc/E/RlnPGvGfS0W7+6ocy2xhDVQVh/KvC2Uf7kACs+gDytdusDSdWfWkaNzw==",
+@@ -1731,3 +1731,3 @@
+-            "version": "1.6.5",
+-            "resolved": "https://registry.npmjs.org/axios/-/axios-1.6.5.tgz",
+-            "integrity": "sha512-Ii012v05KEVuUoFWmMW/UQv9aRIc3ZwkWDcM+h5Il8izZCtRVpDUfwpoFf7eOtajT3QiGR4yDUx7lPqHJULgbg==",
++            "version": "1.6.7",
++            "resolved": "https://registry.npmjs.org/axios/-/axios-1.6.7.tgz",
++            "integrity": "sha512-/hDJGff6/c7u0hDkvkGxR/oy6CbCs8ziCsC7SqmhjfozqiJGc8Z11wrv9z9lYfY4K8l+H9TpjcMDX0xOZmx+RA==",
+@@ -6403,3 +6403,3 @@
+-            "version": "5.3.2",
+-            "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.3.2.tgz",
+-            "integrity": "sha512-6l+RyNy7oAHDfxC4FzSJcz9vnjTKxrLpDG5M2Vu4SHRVNg6xzqZp6LYSR9zjqQTu8DU/f5xwxUdADOkbrIX2gQ==",
++            "version": "5.3.3",
++            "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.3.3.tgz",
++            "integrity": "sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==",
+diff --git a/package.json b/package.json
+index aa541cd..814c064 100644
+--- a/package.json
++++ b/package.json
+@@ -13 +13 @@
+-        "@types/react-dom": "^18.2.14",
++        "@types/react-dom": "^18.2.18",
+@@ -15 +15 @@
+-        "axios": "^1.6.5",
++        "axios": "^1.6.7",
+diff --git a/src/components/Footer/Footer.tsx b/src/components/Footer/Footer.tsx
+index a15636e..d65a719 100644
+--- a/src/components/Footer/Footer.tsx
++++ b/src/components/Footer/Footer.tsx
+@@ -30 +30 @@ const Footer: React.FC<Props> = ({ logoSrc }) => {
+-                        Створено в рамках проєкту &quot; <a href="https://ecampus.kpi.ua/home">Електронний кампус КПІ</a>&quot;
++                        Створено в рамках проєкту <a href="https://ecampus.kpi.ua/home">&quot; Електронний кампус КПІ&quot;</a>
+diff --git a/src/components/I-ProfileDetails/I-ProfileDetails.tsx b/src/components/I-ProfileDetails/I-ProfileDetails.tsx
+index a707f40..229b391 100644
+--- a/src/components/I-ProfileDetails/I-ProfileDetails.tsx
++++ b/src/components/I-ProfileDetails/I-ProfileDetails.tsx
+@@ -61 +61 @@ const IProfileDetails: React.FC<Props> = ({ teacherInfo }) => {
+-     * it formats the number into '+XX (XXX) XXX XX XX' pattern.
++     * it formats the number into '+XXX (XX) XXX XX XX' pattern.
+@@ -74 +74 @@ const IProfileDetails: React.FC<Props> = ({ teacherInfo }) => {
+-            return cleanNumber.replace(/(\d{2})(\d{3})(\d{3})(\d{2})(\d{2})/, '+$1 ($2) $3 $4 $5');
++            return cleanNumber.replace(/(\d{3})(\d{2})(\d{3})(\d{2})(\d{2})/, '+$1 ($2) $3 $4 $5');
+diff --git a/src/components/I-TeacherSearch/I-TeacherSearch.tsx b/src/components/I-TeacherSearch/I-TeacherSearch.tsx
+index 3120931..7b17b2d 100644
+--- a/src/components/I-TeacherSearch/I-TeacherSearch.tsx
++++ b/src/components/I-TeacherSearch/I-TeacherSearch.tsx
+@@ -36 +36 @@ const ITeacherSearch: React.FC = () => {
+-                fieldClass="text-black flex-1 max-h-6 overflow-auto"
++                fieldClass="px-2 py-4 text-black flex-1 max-h-6 overflow-auto"
+diff --git a/src/components/InputField/InputField.tsx b/src/components/InputField/InputField.tsx
+index f1aef81..c39dede 100644
+--- a/src/components/InputField/InputField.tsx
++++ b/src/components/InputField/InputField.tsx
+@@ -42,0 +43 @@ const InputField: React.FC<Props> = ({
++    const [currentFocused, setCurrentFocused] = useState(-1);
+@@ -86,0 +88 @@ const InputField: React.FC<Props> = ({
++            handleTipClick(userInput);
+@@ -88,0 +91,45 @@ const InputField: React.FC<Props> = ({
++
++        if (e.key === 'ArrowDown') {
++            const focusableTips = document.querySelectorAll('.focusable-tips');
++            if (!focusableTips.length) return;
++
++            if (currentFocused === -1) {
++                if (focusableTips.length) {
++                    setCurrentFocused(0);
++                    (focusableTips[0] as HTMLElement).focus();
++                }
++            }
++
++            if (currentFocused === focusableTips.length - 1) {
++                setCurrentFocused(0);
++                (focusableTips[0] as HTMLElement).focus();
++                return;
++            }
++
++            setCurrentFocused((prevState) => {
++                const el = focusableTips[prevState + 1];
++                el && (el as HTMLElement).focus();
++                return prevState + 1;
++            });
++        }
++
++        if (e.key === 'ArrowUp') {
++            const focusableTips = document.querySelectorAll('.focusable-tips');
++            if (!focusableTips.length) return;
++
++            if (currentFocused === 0) {
++                setCurrentFocused(() => {
++                    const el = focusableTips[focusableTips.length - 1];
++                    el && (el as HTMLElement).focus();
++                    return focusableTips.length - 1;
++                });
++
++                return;
++            }
++
++            setCurrentFocused((currentFocus) => {
++                const el = focusableTips[currentFocus - 1];
++                el && (el as HTMLElement).focus();
++                return currentFocus - 1;
++            });
++        }
+@@ -113 +160 @@ const InputField: React.FC<Props> = ({
+-            if (!localTipOptions[key].length) continue;
++            if (!localTipOptions[key]?.length) continue;
+@@ -121 +168,2 @@ const InputField: React.FC<Props> = ({
+-                    className="cursor-pointer hover:bg-neutral-200 p-2"
++                    className="cursor-pointer hover:bg-neutral-200 p-2 focusable-tips"
++                    title={tip}
+@@ -135 +183,4 @@ const InputField: React.FC<Props> = ({
+-        <div className="flex items-center w-full rounded-lg border-1 border-neutral-100 p-1 mt-6 relative">
++        <div
++            onKeyDown={handleKeyDown}
++            className="gap-2 flex items-center w-full rounded-lg border-1 border-neutral-100 p-1 mt-6 relative"
++        >
+@@ -143 +193,0 @@ const InputField: React.FC<Props> = ({
+-                onKeyDown={handleKeyDown}
